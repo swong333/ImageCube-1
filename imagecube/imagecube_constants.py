@@ -8,7 +8,7 @@ Some explanation of where this value comes from is needed.
 
 """
 
-MJY_PER_SR_TO_JY_PER_ARCSEC2 = u.MJy.to(u.Jy)/u.sr.to(u.arcsec**2)
+MJY_PER_SR_TO_JY_PER_ARCSEC2 = u.MJy.to(u.Jy) / u.sr.to(u.arcsec**2)
 """
 Code constant: MJY_PER_SR_TO_JY_PER_ARCSEC2
 
@@ -85,8 +85,8 @@ Representative wavelength (in micron) for the 2MASS Ks filter
 
 """
 
-JY_CONVERSION = u.Jy.to(u.erg / u.cm**2 / u.s / u.Hz, 1., 
-                        equivalencies=u.spectral_density(u.AA, 1500))  ** -1
+JY_CONVERSION = u.Jy.to(u.erg / u.cm**2 / u.s / u.Hz, 1.,
+                        equivalencies=u.spectral_density(u.AA, 1500)) ** -1
 """
 Code constant: JY_CONVERSION
 
