@@ -32,17 +32,17 @@ import astropy.utils.console as console
 from astropy.utils.exceptions import AstropyUserWarning
 
 # import the file containing all the constants
-from imagecube_constants import(FUV_LAMBDA_CON,
-                                FVEGA_H,
-                                FVEGA_J,
-                                FVEGA_KS,
-                                JY_CONVERSION,
-                                MJY_PER_SR_TO_JY_PER_ARCSEC2,
-                                NUV_LAMBDA_CON,
-                                NYQUIST_SAMPLING_RATE,
-                                S250_BEAM_AREA,
-                                S350_BEAM_AREA,
-                                S500_BEAM_AREA,)
+from imagecube_constants import (FUV_LAMBDA_CON,
+                                 FVEGA_H,
+                                 FVEGA_J,
+                                 FVEGA_KS,
+                                 JY_CONVERSION,
+                                 MJY_PER_SR_TO_JY_PER_ARCSEC2,
+                                 NUV_LAMBDA_CON,
+                                 NYQUIST_SAMPLING_RATE,
+                                 S250_BEAM_AREA,
+                                 S350_BEAM_AREA,
+                                 S500_BEAM_AREA,)
 
 # also import WAVELENGTH_2MASS_H, WAVELENGTH_2MASS_J, WAVELENGTH_2MASS_KS
 
