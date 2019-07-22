@@ -1235,7 +1235,7 @@ def main(args=None):
 
 # this is just to test and see if the script is running fine,
 # delete for the realease
-main()
+# main()
 
 
 # python imagecube.py --flux_conv --im_reg --im_conv --fwhm=8 --im_regrid
