@@ -58,3 +58,9 @@ distribute-*.tar.gz
 
 # Mac OSX
 .DS_Store
+
+# Ignore the log files
+**/*.log
+
+#ignore the kernels files
+**/*.gz
