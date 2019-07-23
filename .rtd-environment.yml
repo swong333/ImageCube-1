@@ -10,5 +10,5 @@ dependencies:
     - matplotlib
     - numpy
     - sphinx-astropy
-    - pip:
-      - requirements.txt
+    # - pip:
+      # - requirements.txt
