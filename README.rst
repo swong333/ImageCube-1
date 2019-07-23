@@ -1,9 +1,14 @@
 Imagecube processes multi-wavelength astronomical imaging datasets, performing 
 -------------------------------------------------------------------------------
 
-.. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
+.. |powered by astropy|:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
+
+.. |travis master| image:: https://travis-ci.org/rishabkhincha/ImageCube-1.svg?branch=master
+    :target: https://travis-ci.org/rishabkhincha/ImageCube-1
+    :alt: Travis master badge
+
 
 conversion to common flux units,  registration to a common WCS, convolution to
 
