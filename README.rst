@@ -1,4 +1,4 @@
-Imagecube processes multi-wavelength astronomical imaging datasets, performing 
+Imagecube 
 -------------------------------------------------------------------------------
 
 .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
@@ -10,13 +10,13 @@ Imagecube processes multi-wavelength astronomical imaging datasets, performing
     :alt: Travis master badge
 
 
-conversion to common flux units,  registration to a common WCS, convolution to
+ImageCube processes multi-wavelength astronomical imaging datasets, performing conversion to common flux units,  registration to a common WCS, convolution to a common angular resolution, and regridding to a specified pixel size.
 
 
 License
 -------
 
-This project is Copyright (c) a common angular resolution, and regridding to a specified pixel size. Rishab Khincha and licensed under
+This project is Copyright (c) Rishab Khincha and licensed under
 the terms of the BSD 3-Clause license. This package is based upon
 the `Astropy package template <https://github.com/astropy/package-template>`_
 which is licensed under the BSD 3-clause licence. See the licenses folder for
