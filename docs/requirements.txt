@@ -1,0 +1,1 @@
+sphinx_astropy==1.1.1
