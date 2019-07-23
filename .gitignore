@@ -64,3 +64,4 @@ distribute-*.tar.gz
 
 #ignore the kernels files
 **/*.gz
+**/*.fits

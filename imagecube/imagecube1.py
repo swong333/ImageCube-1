@@ -815,8 +815,9 @@ def create_data_cube(image_stack, logfile_name):
 
     # TODO : check why the next 2 lines are not working
 
-    # hdulist.add_datasum(when='Computed by imagecube')
-    # hdulist.add_checksum(when='Computed by imagecube',override_datasum=True)
+    hdulist[0].add_datasum(when='Computed by imagecube')
+    hdulist[0].add_checksum(when='Computed by imagecube',
+                            override_datasum=True)
 
     hdulist.writeto(new_directory + '/' + 'datacube.fits', overwrite=True)
 
@@ -842,6 +843,9 @@ def create_data_cube(image_stack, logfile_name):
 
         for i in range(1, len(image_stack)):
             hdulist = image_stack[i]
+            hdulist.add_datasum(when='Computed by imagecube')
+            hdulist.add_checksum(when='Computed by imagecube',
+                                 override_datasum=True)
             cube_hdulist.append(hdulist)
 
         cube_hdulist.writeto(new_directory + '/' + 'datacube_2d.fits',
@@ -1072,10 +1076,13 @@ def main(args=None):
             #             planes, after finishing file loop
             pixelscale = get_pixel_scale(header)
             fov = pixelscale * float(header['NAXIS1'])
-            log.info("Checking %s: is pixel scale (%.2f\") < ang_size " +
-                     "(%.2f\") + < FOV (%.2f\") ?" % (fitsfile, pixelscale,
-                                                      ang_size, fov))
-            if (pixelscale < ang_size < fov):
+
+            # log.info("Checking {}: is pixel scale (${}) < ang_size " +
+            #          "(${}) + < FOV (${}) ?".format(fitsfile,
+            #                                         pixelscale,
+            #                                         ang_size,
+            #                                         fov))
+            if (float(pixelscale) < float(ang_size) < float(fov)):
                 try:
                     # there seems to be a different name for wavelength
                     # in some images, look into it
@@ -1235,7 +1242,9 @@ def main(args=None):
 
 # this is just to test and see if the script is running fine,
 # delete for the realease
-# main()
+
+
+main()
 
 
 # python imagecube.py --flux_conv --im_reg --im_conv --fwhm=8 --im_regrid
