@@ -11,4 +11,4 @@ dependencies:
     - numpy
     - sphinx-astropy
     - pip:
-      - dependency_from_pip
+      - requirements.txt
