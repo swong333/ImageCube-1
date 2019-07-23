@@ -9,6 +9,10 @@ Imagecube
     :target: https://travis-ci.org/rishabkhincha/ImageCube-1
     :alt: Travis master badge
 
+.. image:: https://readthedocs.org/projects/imagecube-1/badge/?version=latest
+	:target: https://imagecube-1.readthedocs.io/en/latest/?badge=latest
+	:alt: Documentation Status
+
 
 ImageCube processes multi-wavelength astronomical imaging datasets, performing conversion to common flux units,  registration to a common WCS, convolution to a common angular resolution, and regridding to a specified pixel size.
 
