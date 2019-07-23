@@ -32,6 +32,8 @@ import sys
 from configparser import ConfigParser
 from importlib import import_module
 
+sys.path.insert(0, os.path.abspath('../imagecube/'))
+
 try:
     from sphinx_astropy.conf.v1 import *  # noqa
 except ImportError:

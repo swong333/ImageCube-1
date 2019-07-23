@@ -295,12 +295,13 @@ def get_conversion_factor(header, instrument):
                              (constants.c.to('angstrom/s').value))
 
     elif (instrument == '2MASS'):
+        # check if the conversion factor needs to be changed
         fvega = 0
-        if (header['FILTER'] == 'j'):
+        if (header['FILTER'].lower() == 'j'):
             fvega = FVEGA_J
-        elif (header['FILTER'] == 'h'):
+        elif (header['FILTER'].lower() == 'h'):
             fvega = FVEGA_H
-        elif (header['FILTER'] == 'k'):
+        elif (header['FILTER'].lower() == 'k'):
             fvega = FVEGA_KS
         conversion_factor = fvega * 10**(-0.4 * header['MAGZP'])
 
@@ -487,10 +488,6 @@ def find_image_planes(hdulist):
     Parameters
     ----------
     hdulist: FITS hdulist
-
-    Outputs
-    -------
-    img_plns: list of which indices in hdulist correspond to science data
 
     """
     n_hdu = len(hdulist)
