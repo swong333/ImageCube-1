@@ -1,1 +1,12 @@
+requests==2.22.0
+coverage==4.5.3
+typing==3.7.4
+montage_wrapper==0.9.9
+pytest==5.0.1
+astropy==3.2.1
+numpy==1.14.5
+scipy==1.1.0
+setuptools==40.6.3
 sphinx_astropy==1.1.1
+matplotlib==3.1.0
+Cython==0.29.12
