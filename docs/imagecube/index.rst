@@ -4,12 +4,13 @@ ImageCube Documentation
 
 This is the documentation for ImageCube.
 
-.. automodule:: imagecube_constants
-	:members: 
+   
+.. automodapi:: imagecube1
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
 
 Indices and tables
 ==================
@@ -21,4 +22,3 @@ Indices and tables
 
 Reference/API
 =============
-

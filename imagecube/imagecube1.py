@@ -62,7 +62,112 @@ matplotlib.use('PS')
 
 def print_usage():
     """
-    Displays usage information in case of a command line error.
+    Displays usage information in case of a command line error,
+    or when the --help tag is used.
+
+    The usage is as follows :
+
+    Usage: imagecube.main : --dir <directory> --ang_size <angular_size>
+    [--flux_conv] [--im_reg] [--im_ref <filename>]
+    [--rot_angle <number in degree>] [--im_conv] [--fwhm <fwhm value>]
+    [--kernels <kernel directory>] [--im_regrid]
+    [--im_pixsc <number in arcsec>] [--seds] [--make2d] [--cleanup]
+    [--help]
+
+    dir: the path to the directory containing the <input FITS files> to be
+    processed. For multi-extension FITS files, currently only the first
+    extension after the primary one is used.
+
+    ang_size: the field of view of the output image cube in arcsec
+
+    flux_conv: perform unit conversion to Jy/pixel for all images not already
+    in these units.
+    NOTE: If data are not GALEX, 2MASS, MIPS, IRAC, PACS, SPIRE, then the user
+    should provide flux unit conversion factors to go from the image's native
+    flux units to Jy/pixel. This information should be recorded in the header
+    keyword FLUXCONV for each input image.
+
+    im_reg: register the input images to the reference image. The user should
+    provide the reference image with the im_ref parameter.
+
+    im_ref: user-provided reference image to which the other images are
+    registered. This image must have a valid world coordinate system.
+    The position angle of this image will be used for the final registered
+    images, unless an angle is explicitly set using --rot_angle.
+
+    rot_angle: position angle (+y axis, in degrees West of North) for the
+    registered images.
+    If omitted, the PA of the reference image is used.
+
+    im_conv: perform convolution to a common resolution, using either a
+    Gaussian or a PSF kernel. A corresponding kernel is looked for on
+    https://www.astro.princeton.edu/~ganiano/Kernels/. If not found,
+    a Gaussian kernel is used, the angular resolution is specified
+    with the fwhm parameter.
+    If the PSF kernel is chosen, the user provides the
+    PSF kernels with the following naming convention:
+
+        <input FITS files>_kernel.fits
+
+    For example: an input image named SI1.fits will have a corresponding
+    kernel file named SI1_kernel.fits
+
+    fwhm: the angular resolution in arcsec to which all images will be
+    convolved with im_conv, if the Gaussian convolution is chosen, or if
+    not all the input images have a corresponding kernel.
+
+    kernels: the name of a directory containing kernel FITS
+    images for each of the input images. If all input images do not have a
+    corresponding kernel image, then the kernel will be searched online or a
+    Gaussian convolution will be performed for these images.
+
+    im_regrid: perform regridding of the convolved images to a common
+    pixel scale. The pixel scale is defined by the im_pxsc parameter.
+
+    im_pixsc: the common pixel scale (in arcsec) used for the regridding
+    of the images in the im_regrid. It is a good idea the pixel scale and
+    angular resolution of the images in the regrid step to conform to the
+    Nyquist sampling rate:
+    angular resolution =  NYQUIST_SAMPLING_RATE * im_pixsc
+
+    seds:  produce the spectral energy distribution on a pixel-by-pixel
+    basis, on the regridded images.
+
+    make2d: along with the true 3D datacube to be built, create a multi
+    extension file, stored with a _2d appended to the datacube filename
+
+    cleanup: if this parameter is present, then output files from previous
+    executions of the script are removed and no processing is done.
+
+    help: if this parameter is present, this message will be displayed and no
+    processing will be done.
+
+    NOTE: The following keywords must be present in all images, along with a
+    comment containing the units (where applicable), for optimal image
+    processing:
+
+        BUNIT: the physical units of the array values (i.e. the flux unit).
+        FLSCALE: the factor that converts the native flux units (as given
+                 in the BUNIT keyword) to Jy/pixel. The units of this factor
+                 should be: (Jy/pixel) / (BUNIT unit).
+                 This keyword should be added in the case of data other than
+                 GALEX (FUV, NUV), 2MASS (J, H, Ks), SPITZER (IRAC, MIPS),
+                 HERSCHEL (PACS, SPIRE; photometry)
+        INSTRUME: the name of the instrument used
+        WAVELNTH: the representative wavelength (in micrometres) of the filter
+                  bandpass
+
+    Keywords which constitute a valid world coordinate system must also be
+    present.
+
+    If any of these keywords are missing, imagecube will attempt to determine
+    them. The calculated values will be present in the headers of the output
+    images; if they are not the desired values, please check the headers
+    of your input images and try again.
+
+
+
+
     """
 
     print("""
@@ -159,6 +264,22 @@ of your input images and try again.
 def parse_command_line(args):
     """
     Parses the command line to obtain parameters.
+    Updates all the variables for all the various actions to be performed
+    on the dataset mentioned.
+
+    Parameters
+    ----------
+    args: List
+        This contains a list of parameters that the user has used to call
+        the imagecube function.
+
+    Returns
+    -------
+    parse_status: int
+        0 : The arguments were succesfully parsed, and the varibales updated.
+        1 : args contains --help
+        2 : There was an error in parsing the arguments or the image/kernel
+            directories mentioned do not exist.
 
     """
 
@@ -327,10 +448,16 @@ def get_conversion_factor(header, instrument):
 
 
 def convert_images(image_stack):
+
     """
     Converts all of the input images' native "flux units" to Jy/pixel
-    The converted values are stored in the list of arrays,
-    converted_data, and they are also saved as new FITS images.
+    The converted values are updated in image_stack and they are also
+    saved as new FITS images.
+    The method first attempts to look for the FLSCALE keyword in the
+    header file, which would be used for conversion. If not found, it
+    attempts to calculate the conversion factor based on the instrument
+    being used. However, if it cannot determine the factor, it will raise
+    a warning and the conversion factor will be set to 1.
 
     Parameters
     ----------
@@ -338,7 +465,13 @@ def convert_images(image_stack):
         A structure containing headers and image data for all FITS input
         images.
 
+    Returns
+    -------
+    image_stack: HDU list
+        Updates the image stack received in the input, the data is converted.
+
     """
+
     # make new directory for output, if needed
     new_directory = image_directory + "/converted/"
     if not os.path.exists(new_directory):
@@ -384,7 +517,8 @@ def convert_images(image_stack):
 
 
 def get_pixel_scale(header):
-    '''
+
+    """
     Compute the pixel scale in arcseconds per pixel from an image WCS
     Assumes WCS is in degrees (TODO: generalize)
 
@@ -392,8 +526,13 @@ def get_pixel_scale(header):
     ----------
     header: FITS header of image
 
+    Returns
+    -------
+    pix_scale: float
+        The pixel scale calculated from the header input.
 
-    '''
+    """
+
     w = wcs.WCS(header)
 
     if w.wcs.has_cd():
@@ -406,7 +545,8 @@ def get_pixel_scale(header):
 
 
 def get_pangle(header):
-    '''
+
+    """
     Compute the rotation angle, in degrees,  from an image WCS
     Assumes WCS is in degrees (TODO: generalize)
 
@@ -414,8 +554,12 @@ def get_pangle(header):
     ----------
     header: FITS header of image
 
+    Returns
+    -------
+    cr2: float
+        The rotation angle, in degrees calculated from the header input.
 
-    '''
+    """
     w = wcs.WCS(header)
     pc = w.wcs.get_pc()
     cr2 = math.atan2(pc[0, 1], pc[0, 0]) * u.radian.to(u.deg)
@@ -423,7 +567,8 @@ def get_pangle(header):
 
 
 def merge_headers(montage_hfile, orig_header, out_file):
-    '''
+
+    """
     Merges an original image header with the WCS info
     in a header file generated by montage.mHdr.
     Puts the results into out_file.
@@ -432,11 +577,20 @@ def merge_headers(montage_hfile, orig_header, out_file):
     Parameters
     ----------
     montage_hfile: a text file generated by montage.mHdr,
-    which contains only WCS information
+                   which contains only WCS information.
+
     orig_header: FITS header of image, contains all the other
     stuff we want to keep
 
-    '''
+    outfile : the output file to be created, after merging the
+              headers.
+
+    Returns
+    -------
+    orig_header: FITS Header
+
+    """
+
     montage_header = fits.Header.fromtextfile(montage_hfile)
     for key in orig_header.keys():
         if key in montage_header.keys():
@@ -456,7 +610,7 @@ def merge_headers(montage_hfile, orig_header, out_file):
 
 
 def get_ref_wcs(img_name):
-    '''
+    """
     get WCS parameters from first science extension
     (or primary extension if there is only one) of image
 
@@ -464,8 +618,19 @@ def get_ref_wcs(img_name):
     ----------
     img_name: name of FITS image file
 
+    Returns
+    -------
+    lngref_input: float
+        CRVAL1 from the input image header.
 
-    '''
+    latref_input: float
+        CRVAL2 from the input image header.
+
+    rotation_pa: float
+        The rotation angle, in degrees, calculated using the method pangle.
+
+    """
+
     hdulist = fits.open(img_name)
     # take the first sci image if multi-ext.
     hdr = hdulist[find_image_planes(hdulist)[0]].header
@@ -482,6 +647,7 @@ def get_ref_wcs(img_name):
 
 
 def find_image_planes(hdulist):
+
     """
     Reads FITS hdulist to figure out which ones contain science data
 
@@ -489,7 +655,14 @@ def find_image_planes(hdulist):
     ----------
     hdulist: FITS hdulist
 
+    Returns
+    -------
+    img_plns: list
+        A list consisting indices of the HDUs containing science data from
+        the input hdulist.
+
     """
+
     n_hdu = len(hdulist)
     img_plns = []
     if n_hdu == 1:  # if there is only one extension, then use that
@@ -505,6 +678,7 @@ def find_image_planes(hdulist):
 
 
 def register_images(image_stack):
+
     """
     Registers all of the images to a common WCS
 
@@ -514,7 +688,14 @@ def register_images(image_stack):
         A structure containing headers and image data for all FITS input
         images.
 
+    Returns
+    -------
+    image_stack: HDU list
+        Updates the image stack received in the input after the images
+        are registered to a common WCS.
+
     """
+
     # make new directory for output, if needed
     new_directory = image_directory + "/registered/"
     if not os.path.exists(new_directory):
@@ -527,7 +708,8 @@ def register_images(image_stack):
     # temporary directory to store the file from image_stack
     # so that reproject function works
     tmp_directory = image_directory + "/temp/"
-    os.mkdir(tmp_directory)
+    if not os.path.exists(tmp_directory):
+        os.mkdir(tmp_directory)
 
     # now loop over all the images
     for i in range(1, len(image_stack)):
@@ -576,9 +758,10 @@ def register_images(image_stack):
 
 
 def convolve_images(image_stack, kernel_stack):
+
     """
-    Convolves all of the images to a common resolution using a simple
-    gaussian kernel.
+    Convolves all of the images to a common resolution using the kernel
+    stack that was created.
 
     Parameters
     ----------
@@ -586,7 +769,14 @@ def convolve_images(image_stack, kernel_stack):
         A structure containing headers and image data for all FITS input
         images.
 
+    Returns
+    -------
+    image_stack: HDU list
+        Updates the image stack received in the input after the images
+        are convolved.
+
     """
+
     # make new directory for output, if needed
     new_directory = image_directory + "/convolved/"
     if not os.path.exists(new_directory):
@@ -651,6 +841,7 @@ def convolve_images(image_stack, kernel_stack):
 
 
 def resample_kernel(kernel_file, img_file):
+
     """
     Resamples the kernel to the same pixel scale as the image.
 
@@ -663,6 +854,11 @@ def resample_kernel(kernel_file, img_file):
     img_file: string
         A string containing the name of the image file
         that will be convolved with this kernel
+
+    Returns
+    -------
+    resampled_kernel_data: Array
+        An array that consists of the resampled kernel data
 
     """
 
@@ -699,6 +895,7 @@ def resample_kernel(kernel_file, img_file):
 
 
 def resample_images(image_stack, logfile_name):
+
     """
     Resamples all of the images to a common pixel grid.
 
@@ -708,7 +905,14 @@ def resample_images(image_stack, logfile_name):
         A structure containing headers and image data for all FITS input
         images.
 
+    Returns
+    -------
+    image_stack: HDU list
+        Updates the image stack received in the input after the images
+        are resampled.
+
     """
+
     # make new directory for output, if needed
     new_directory = image_directory + "/resampled/"
     if not os.path.exists(new_directory):
@@ -769,6 +973,7 @@ def resample_images(image_stack, logfile_name):
 
 
 def create_data_cube(image_stack, logfile_name):
+
     """
     Creates a data cube from the provided images.
 
@@ -779,6 +984,7 @@ def create_data_cube(image_stack, logfile_name):
         images.
 
     """
+
     # make new directory for output, if needed
     new_directory = image_directory + "/datacube/"
     if not os.path.exists(new_directory):
@@ -848,12 +1054,13 @@ def create_data_cube(image_stack, logfile_name):
         cube_hdulist.writeto(new_directory + '/' + 'datacube_2d.fits',
                              overwrite=True, output_verify='ignore')
 
-    return image_stack
+    return  # image_stack
 
 
 def output_seds(image_stack):
+
     """
-    Makes the SEDs.
+    Makes the Spectral Energy Distributions for the image stack.
 
     Parameters
     ----------
@@ -862,6 +1069,7 @@ def output_seds(image_stack):
         images.
 
     """
+
     # make new directory for output, if needed
     new_directory = image_directory + "/seds/"
     if not os.path.exists(new_directory):
@@ -883,7 +1091,6 @@ def output_seds(image_stack):
         hdulist = image_stack[i]
         image_data = hdulist.data
         all_image_data.append(image_data)
-    print(len(all_image_data))
     sed_data = []
     for i in range(0, num_wavelengths - 1):
         print(i, "on")
@@ -941,7 +1148,8 @@ def cleanup_output_files():
     script.
     """
 
-    for d in ('converted', 'registered', 'convolved', 'resampled', 'seds'):
+    for d in ('converted', 'registered', 'convolved', 'resampled', 'seds',
+              'tmp', 'temp'):
         subdir = image_directory + '/' + d
         if (os.path.isdir(subdir)):
             log.info("Removing " + subdir)
@@ -1022,6 +1230,8 @@ def main(args=None):
     image_data = []
     headers = []
 
+    # Place all this in a sepereate function that will create an image stack
+
     # append all the images before creating the stack
     hdus = []
 
@@ -1043,195 +1253,197 @@ def main(args=None):
                  start_time.strftime('%Y-%m-%d_%H%M%S'))
         log.info('imagecube called with arguments %s' % arglist)
 
-        # Grab all of the .fits and .fit files in the specified directory
-        all_files = glob.glob(image_directory + "/*.fit*")
-        # no use doing anything if there aren't any files!
-        if len(all_files) == 0:
-            warnings.warn('No fits files found in directory %s' %
-                          image_directory, AstropyUserWarning)
-            if __name__ == '__main__':
-                sys.exit()
-            else:
-                return
-
-        # get images
-        for (i, fitsfile) in enumerate(all_files):
-            hdulist = fits.open(fitsfile)
-            img_extens = find_image_planes(hdulist)
-            # NOTETOSELF: right now we are just using the *first* image
-            #             extension in a file which is not what we want
-            #             to do, ultimately.
-            header = hdulist[img_extens[0]].header
-            image = hdulist[img_extens[0]].data
-            # Strip the .fit or .fits extension from the filename so we
-            # can append things to it later on
-            filename = os.path.splitext(hdulist.filename())[0]
-            hdulist.close()
-            # check to see if image has reasonable scale & orientation
-            # NOTETOSELF: should this really be here? It's not relevant for
-            #             just flux conversion. Want separate loop over image
-            #             planes, after finishing file loop
-            pixelscale = get_pixel_scale(header)
-            fov = pixelscale * float(header['NAXIS1'])
-
-            # log.info("Checking {}: is pixel scale (${}) < ang_size " +
-            #          "(${}) + < FOV (${}) ?".format(fitsfile,
-            #                                         pixelscale,
-            #                                         ang_size,
-            #                                         fov))
-            if (float(pixelscale) < float(ang_size) < float(fov)):
-                try:
-                    # there seems to be a different name for wavelength
-                    # in some images, look into it
-                    wavelength = header['WAVELNTH']
-                    # add the unit if it's not already there
-                    header['WAVELNTH'] = (wavelength, 'micron')
-                    header['FILENAME'] = fitsfile
-                    a = fits.ImageHDU(header=header, data=image)
-                    hdus.append(a)
-                except KeyError:
-                    warnings.warn('Image %s has no WAVELNTH keyword, will ' +
-                                  'not be used' % filename, AstropyUserWarning)
-            else:
-                warnings.warn("Image %s does not meet the above criteria." %
-                              filename, AstropyUserWarning)
-            # end of loop over files
-
-        # Sort the lists by their WAVELNTH value
-
-        hdus.sort(key=lambda x: x.header['WAVELNTH'])
-
-        # this is the image stack, the data structure stores the images
-        # in the following format :
-
-        # Primary HDU : the first HDU contains some information on the
-        #               stack created
-        # Image HDU : the next 'n' image HDUs contain the headers and the data
-        #             of the image files that need to be processed by IMAGECUBE
-
-        image_stack = fits.HDUList(hdus)
-
-        # At this step, create a kernel stack as well.
-        # It should consist of the 5 kernels that need to be used to convolve.
-        # Generate the kernel filename by picking up the instruments for each
-        # image and the wavelength Further, before convolving each image from
-        # this kernel_stack with images from the image_stack
-        # Resample them so that the pixel scale match  -- DOUBT
-        # Pixel scale of kernel should match with that of the image pixel scale
-        kernels = []
-        kernels.append([])
-
-        # this is the url from where the kernels will be downloaded
-        url0 = ("https://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/" +
-                "Kernels_fits_Files/Low_Resolution/Kernel_LoRes_")
-
-        # all the images will be transformed to the
-        # PSF of the largest wavelength
-        to_hdu = image_stack[-1]
-        to_instr = str(to_hdu.header['INSTRUME'])
-        to_wavelnth = to_hdu.header['WAVELNTH']
-
-        # small hack since MIPS channels sometimes have wavelengths of
-        # different levels of precision
-        if(to_instr == "MIPS"):
-            to_wavelnth = math.ceil(to_wavelnth)
-
-        # For every image in our stack, we first look if there's a
-        # corresponding kernel file in the dataset provided. If we
-        # dont find one, we look for one on the URL mentioned and
-        # generated using the instrument name and wavlenegth. If
-        # the website does not seem to have the corresponding kernels,
-        # we generate a Gaussian kernel using the
-        # FWHM input and the corresponding pixel_scale
-
-        for i in range(1, len(image_stack)):
-            original_filename = os.path.basename(image_stack[i].header
-                                                 ['FILENAME'])
-            original_directory = os.path.dirname(image_stack[i].header
-                                                 ['FILENAME'])
-
-            kernel_filename = (original_directory + "/" + kernel_directory +
-                               "/" + original_filename + "_kernel.fits")
-
-            log.info("Looking for " + kernel_filename)
-
-            if os.path.exists(kernel_filename):
-                log.info("Found a kernel; will convolve with it shortly.")
-                # reading the kernel
-                kernel_hdulist = fits.open(kernel_filename)
-                kernel_image = kernel_hdulist[0].data
-                kernel_hdulist.close()
-                kernels.append(kernel_image)
-
-            else:
-                fr_instr = str(image_stack[i].header['INSTRUME'])
-                fr_wavelnth = image_stack[i].header['WAVELNTH']
-
-                if(fr_instr == 'MIPS'):
-                    fr_wavelnth = math.ceil(fr_wavelnth)
-
-                # This is the URL generated, from where we will donwload files.
-
-                url = (url0 + str(fr_instr) + "_" + str(fr_wavelnth) + "_to_" +
-                       str(to_instr) + "_" + str(to_wavelnth) + ".fits.gz")
-
-                filename = url.split("/")[-1]
-
-                # TODO : Look for these files if they're already downloaded so
-                # that these downloads do not need to
-                # happen multiple times if the same kernel files are required.
-                # Ideally, make a kernels folder to handle this
-                with open(filename, "wb") as f:
-                    r = requests.get(url)
-                    if not r.status_code == 404:
-                        f.write(r.content)
-                        with gzip.open(filename, 'rb') as f_in:
-                            with open(filename.split('.gz')[0], 'wb') as f_out:
-                                shutil.copyfileobj(f_in, f_out)
-                        log.info("File unzipped : ", filename.split('.gz')[0])
-
-                        # resampling of the kernel, so that the file can be
-                        # used for convolution
-                        resampled_kernel = resample_kernel(filename.split('.gz'
-                                                                          )[0],
-                                                           image_stack[i]
-                                                           .header['FILENAME'])
-                        kernels.append(resampled_kernel)
-
-                    else:
-                        log.info("This file doesn't seem to exist on the " +
-                                 "website : ",
-                                 filename)
-                        native_pixelscale = get_pixel_scale(image_stack[i].
-                                                            header)
-                        sigma_input = (fwhm_input /
-                                       (2 * math.sqrt(2 * math.log(2)) *
-                                        native_pixelscale))
-                        kernels.append(Gaussian2DKernel(sigma_input).array)
-
-        kernel_stack = kernels
-
-        if (do_conversion):
-            image_stack = convert_images(image_stack)
-
-        if (do_registration):
-            image_stack = register_images(image_stack)
-
-        if (do_convolution):
-            image_stack = convolve_images(image_stack, kernel_stack)
-
-        if (do_resampling):
-            image_stack = resample_images(image_stack, logfile_name)
-
-        if (do_seds):
-            output_seds(image_stack)
-
-        # all done!
-        log.info('All tasks completed.')
+    # Grab all of the .fits and .fit files in the specified directory
+    all_files = glob.glob(image_directory + "/*.fit*")
+    # no use doing anything if there aren't any files!
+    if len(all_files) == 0:
+        warnings.warn('No fits files found in directory %s' %
+                      image_directory, AstropyUserWarning)
         if __name__ == '__main__':
             sys.exit()
         else:
             return
+
+    # get images
+    for (i, fitsfile) in enumerate(all_files):
+        hdulist = fits.open(fitsfile)
+        img_extens = find_image_planes(hdulist)
+        # NOTETOSELF: right now we are just using the *first* image
+        #             extension in a file which is not what we want
+        #             to do, ultimately.
+        header = hdulist[img_extens[0]].header
+        image = hdulist[img_extens[0]].data
+        # Strip the .fit or .fits extension from the filename so we
+        # can append things to it later on
+        filename = os.path.splitext(hdulist.filename())[0]
+        hdulist.close()
+        # check to see if image has reasonable scale & orientation
+        # NOTETOSELF: should this really be here? It's not relevant for
+        #             just flux conversion. Want separate loop over image
+        #             planes, after finishing file loop
+        pixelscale = get_pixel_scale(header)
+        fov = pixelscale * float(header['NAXIS1'])
+
+        # log.info("Checking {}: is pixel scale (${}) < ang_size " +
+        #          "(${}) + < FOV (${}) ?".format(fitsfile,
+        #                                         pixelscale,
+        #                                         ang_size,
+        #                                         fov))
+        if (float(pixelscale) < float(ang_size) < float(fov)):
+            try:
+                # there seems to be a different name for wavelength
+                # in some images, look into it
+                wavelength = header['WAVELNTH']
+                # add the unit if it's not already there
+                header['WAVELNTH'] = (wavelength, 'micron')
+                header['FILENAME'] = fitsfile
+                a = fits.ImageHDU(header=header, data=image)
+                hdus.append(a)
+            except KeyError:
+                warnings.warn('Image %s has no WAVELNTH keyword, will ' +
+                              'not be used' % filename, AstropyUserWarning)
+        else:
+            warnings.warn("Image %s does not meet the above criteria." %
+                          filename, AstropyUserWarning)
+        # end of loop over files
+
+    # Sort the lists by their WAVELNTH value
+
+    hdus.sort(key=lambda x: x.header['WAVELNTH'])
+
+    # this is the image stack, the data structure stores the images
+    # in the following format :
+
+    # Primary HDU : the first HDU contains some information on the
+    #               stack created
+    # Image HDU : the next 'n' image HDUs contain the headers and the data
+    #             of the image files that need to be processed by IMAGECUBE
+
+    image_stack = fits.HDUList(hdus)
+
+    # Place all this in a sepereate function that will create a kernel stack
+
+    # At this step, create a kernel stack as well.
+    # It should consist of the 5 kernels that need to be used to convolve.
+    # Generate the kernel filename by picking up the instruments for each
+    # image and the wavelength Further, before convolving each image from
+    # this kernel_stack with images from the image_stack
+    # Resample them so that the pixel scale match  -- DOUBT
+    # Pixel scale of kernel should match with that of the image pixel scale
+    kernels = []
+    kernels.append([])
+
+    # this is the url from where the kernels will be downloaded
+    url0 = ("https://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/" +
+            "Kernels_fits_Files/Low_Resolution/Kernel_LoRes_")
+
+    # all the images will be transformed to the
+    # PSF of the largest wavelength
+    to_hdu = image_stack[-1]
+    to_instr = str(to_hdu.header['INSTRUME'])
+    to_wavelnth = to_hdu.header['WAVELNTH']
+
+    # small hack since MIPS channels sometimes have wavelengths of
+    # different levels of precision
+    if(to_instr == "MIPS"):
+        to_wavelnth = math.ceil(to_wavelnth)
+
+    # For every image in our stack, we first look if there's a
+    # corresponding kernel file in the dataset provided. If we
+    # dont find one, we look for one on the URL mentioned and
+    # generated using the instrument name and wavlenegth. If
+    # the website does not seem to have the corresponding kernels,
+    # we generate a Gaussian kernel using the
+    # FWHM input and the corresponding pixel_scale
+
+    for i in range(1, len(image_stack)):
+        original_filename = os.path.basename(image_stack[i].header
+                                             ['FILENAME'])
+        original_directory = os.path.dirname(image_stack[i].header
+                                             ['FILENAME'])
+
+        kernel_filename = (original_directory + "/" + kernel_directory +
+                           "/" + original_filename + "_kernel.fits")
+
+        log.info("Looking for " + kernel_filename)
+
+        if os.path.exists(kernel_filename):
+            log.info("Found a kernel; will convolve with it shortly.")
+            # reading the kernel
+            kernel_hdulist = fits.open(kernel_filename)
+            kernel_image = kernel_hdulist[0].data
+            kernel_hdulist.close()
+            kernels.append(kernel_image)
+
+        else:
+            fr_instr = str(image_stack[i].header['INSTRUME'])
+            fr_wavelnth = image_stack[i].header['WAVELNTH']
+
+            if(fr_instr == 'MIPS'):
+                fr_wavelnth = math.ceil(fr_wavelnth)
+
+            # This is the URL generated, from where we will donwload files.
+
+            url = (url0 + str(fr_instr) + "_" + str(fr_wavelnth) + "_to_" +
+                   str(to_instr) + "_" + str(to_wavelnth) + ".fits.gz")
+
+            filename = url.split("/")[-1]
+
+            # TODO : Look for these files if they're already downloaded so
+            # that these downloads do not need to
+            # happen multiple times if the same kernel files are required.
+            # Ideally, make a kernels folder to handle this
+            with open(filename, "wb") as f:
+                r = requests.get(url)
+                if not r.status_code == 404:
+                    f.write(r.content)
+                    with gzip.open(filename, 'rb') as f_in:
+                        with open(filename.split('.gz')[0], 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                    log.info("File unzipped : ", filename.split('.gz')[0])
+
+                    # resampling of the kernel, so that the file can be
+                    # used for convolution
+                    resampled_kernel = resample_kernel(filename.split('.gz'
+                                                                      )[0],
+                                                       image_stack[i]
+                                                       .header['FILENAME'])
+                    kernels.append(resampled_kernel)
+
+                else:
+                    log.info("This file doesn't seem to exist on the " +
+                             "website : ",
+                             filename)
+                    native_pixelscale = get_pixel_scale(image_stack[i].
+                                                        header)
+                    sigma_input = (fwhm_input /
+                                   (2 * math.sqrt(2 * math.log(2)) *
+                                    native_pixelscale))
+                    kernels.append(Gaussian2DKernel(sigma_input).array)
+
+    kernel_stack = kernels
+
+    if (do_conversion):
+        image_stack = convert_images(image_stack)
+
+    if (do_registration):
+        image_stack = register_images(image_stack)
+
+    if (do_convolution):
+        image_stack = convolve_images(image_stack, kernel_stack)
+
+    if (do_resampling):
+        image_stack = resample_images(image_stack, logfile_name)
+
+    if (do_seds):
+        output_seds(image_stack)
+
+    # all done!
+    log.info('All tasks completed.')
+    if __name__ == '__main__':
+        sys.exit()
+    else:
+        return
 
 # if __name__ == '__main__':
 #     import sys
@@ -1242,7 +1454,6 @@ def main(args=None):
 
 
 main()
-
 
 # python imagecube.py --flux_conv --im_reg --im_conv --fwhm=8 --im_regrid
 # --im_pixsc=3.0 --ang_size=300 --im_ref
