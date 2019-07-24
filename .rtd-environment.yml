@@ -10,5 +10,6 @@ dependencies:
     - matplotlib
     - numpy
     - sphinx-astropy
+    - montage_wrapper
     # - pip:
       # - requirements.txt
