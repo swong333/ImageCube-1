@@ -159,6 +159,7 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 
 # -- Adding some extensions ---------------------------------------------------
 extensions += ['sphinx.ext.autodoc', 'sphinx.ext.coverage']
+autodoc_mock_imports = ['montage_wrapper']
 
 # -- Options for the edit_on_github extension ---------------------------------
 
