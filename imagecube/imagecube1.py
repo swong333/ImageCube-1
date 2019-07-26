@@ -1453,7 +1453,7 @@ def main(args=None):
 # delete for the realease
 
 
-main()
+# main()
 
 
 # python imagecube.py --flux_conv --im_reg --im_conv --fwhm=8 --im_regrid
