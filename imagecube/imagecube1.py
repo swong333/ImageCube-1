@@ -264,6 +264,22 @@ of your input images and try again.
 def parse_command_line(args):
     """
     Parses the command line to obtain parameters.
+    Updates all the variables for all the various actions to be performed
+    on the dataset mentioned.
+
+    Parameters
+    ----------
+    args: List
+        This contains a list of parameters that the user has used to call
+        the imagecube function.
+
+    Returns
+    -------
+    parse_status: int
+        0 : The arguments were succesfully parsed, and the varibales updated.
+        1 : args contains --help
+        2 : There was an error in parsing the arguments or the image/kernel
+            directories mentioned do not exist.
 
     """
 
