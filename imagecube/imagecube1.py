@@ -62,7 +62,112 @@ matplotlib.use('PS')
 
 def print_usage():
     """
-    Displays usage information in case of a command line error.
+    Displays usage information in case of a command line error,
+    or when the --help tag is used.
+
+    The usage is as follows :
+
+    Usage: imagecube.main : --dir <directory> --ang_size <angular_size>
+    [--flux_conv] [--im_reg] [--im_ref <filename>]
+    [--rot_angle <number in degree>] [--im_conv] [--fwhm <fwhm value>]
+    [--kernels <kernel directory>] [--im_regrid]
+    [--im_pixsc <number in arcsec>] [--seds] [--make2d] [--cleanup]
+    [--help]
+
+    dir: the path to the directory containing the <input FITS files> to be
+    processed. For multi-extension FITS files, currently only the first
+    extension after the primary one is used.
+
+    ang_size: the field of view of the output image cube in arcsec
+
+    flux_conv: perform unit conversion to Jy/pixel for all images not already
+    in these units.
+    NOTE: If data are not GALEX, 2MASS, MIPS, IRAC, PACS, SPIRE, then the user
+    should provide flux unit conversion factors to go from the image's native
+    flux units to Jy/pixel. This information should be recorded in the header
+    keyword FLUXCONV for each input image.
+
+    im_reg: register the input images to the reference image. The user should
+    provide the reference image with the im_ref parameter.
+
+    im_ref: user-provided reference image to which the other images are
+    registered. This image must have a valid world coordinate system.
+    The position angle of this image will be used for the final registered
+    images, unless an angle is explicitly set using --rot_angle.
+
+    rot_angle: position angle (+y axis, in degrees West of North) for the
+    registered images.
+    If omitted, the PA of the reference image is used.
+
+    im_conv: perform convolution to a common resolution, using either a
+    Gaussian or a PSF kernel. A corresponding kernel is looked for on
+    https://www.astro.princeton.edu/~ganiano/Kernels/. If not found,
+    a Gaussian kernel is used, the angular resolution is specified
+    with the fwhm parameter.
+    If the PSF kernel is chosen, the user provides the
+    PSF kernels with the following naming convention:
+
+        <input FITS files>_kernel.fits
+
+    For example: an input image named SI1.fits will have a corresponding
+    kernel file named SI1_kernel.fits
+
+    fwhm: the angular resolution in arcsec to which all images will be
+    convolved with im_conv, if the Gaussian convolution is chosen, or if
+    not all the input images have a corresponding kernel.
+
+    kernels: the name of a directory containing kernel FITS
+    images for each of the input images. If all input images do not have a
+    corresponding kernel image, then the kernel will be searched online or a
+    Gaussian convolution will be performed for these images.
+
+    im_regrid: perform regridding of the convolved images to a common
+    pixel scale. The pixel scale is defined by the im_pxsc parameter.
+
+    im_pixsc: the common pixel scale (in arcsec) used for the regridding
+    of the images in the im_regrid. It is a good idea the pixel scale and
+    angular resolution of the images in the regrid step to conform to the
+    Nyquist sampling rate:
+    angular resolution =  NYQUIST_SAMPLING_RATE * im_pixsc
+
+    seds:  produce the spectral energy distribution on a pixel-by-pixel
+    basis, on the regridded images.
+
+    make2d: along with the true 3D datacube to be built, create a multi
+    extension file, stored with a _2d appended to the datacube filename
+
+    cleanup: if this parameter is present, then output files from previous
+    executions of the script are removed and no processing is done.
+
+    help: if this parameter is present, this message will be displayed and no
+    processing will be done.
+
+    NOTE: The following keywords must be present in all images, along with a
+    comment containing the units (where applicable), for optimal image
+    processing:
+
+        BUNIT: the physical units of the array values (i.e. the flux unit).
+        FLSCALE: the factor that converts the native flux units (as given
+                 in the BUNIT keyword) to Jy/pixel. The units of this factor
+                 should be: (Jy/pixel) / (BUNIT unit).
+                 This keyword should be added in the case of data other than
+                 GALEX (FUV, NUV), 2MASS (J, H, Ks), SPITZER (IRAC, MIPS),
+                 HERSCHEL (PACS, SPIRE; photometry)
+        INSTRUME: the name of the instrument used
+        WAVELNTH: the representative wavelength (in micrometres) of the filter
+                  bandpass
+
+    Keywords which constitute a valid world coordinate system must also be
+    present.
+
+    If any of these keywords are missing, imagecube will attempt to determine
+    them. The calculated values will be present in the headers of the output
+    images; if they are not the desired values, please check the headers
+    of your input images and try again.
+
+
+
+
     """
 
     print("""
