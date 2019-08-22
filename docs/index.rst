@@ -8,4 +8,3 @@ conversion to common flux units,  registration to a common WCS, convolution to
   :maxdepth: 2
 
   imagecube/index.rst
-
