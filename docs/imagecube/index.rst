@@ -4,7 +4,7 @@ ImageCube Documentation
 
 This is the documentation for ImageCube.
 
-.. automodule:: imagecube_constants
+.. .. automodapi:: imagecube_constants
 	:members: 
 
 .. toctree::
