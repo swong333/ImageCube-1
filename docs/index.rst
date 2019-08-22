@@ -9,6 +9,12 @@ conversion to common flux units,  registration to a common WCS, convolution to
 
   imagecube/index.rst
 
+.. automodapi:: imagecube1
+   :no-inheritance-diagram:
+   :skip: convolve
+   :skip: convolve_fft
+   :skip: rc
+
 .. note:: The layout of this directory is simply a suggestion.  To follow
           traditional practice, do *not* edit this page, but instead place
           all documentation for the package inside ``imagecube/``.
