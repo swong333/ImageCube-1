@@ -1,5 +1,7 @@
 from astropy import units as u
 
+# checking
+
 NYQUIST_SAMPLING_RATE = 3.3
 """
 Code constant: NYQUIST_SAMPLING_RATE
