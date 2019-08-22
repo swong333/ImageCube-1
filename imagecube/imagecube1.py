@@ -148,14 +148,14 @@ def print_usage():
 
         BUNIT: the physical units of the array values (i.e. the flux unit).
         FLSCALE: the factor that converts the native flux units (as given
-                 in the BUNIT keyword) to Jy/pixel. The units of this factor
-                 should be: (Jy/pixel) / (BUNIT unit).
-                 This keyword should be added in the case of data other than
-                 GALEX (FUV, NUV), 2MASS (J, H, Ks), SPITZER (IRAC, MIPS),
-                 HERSCHEL (PACS, SPIRE; photometry)
+        in the BUNIT keyword) to Jy/pixel. The units of this factor
+        should be: (Jy/pixel) / (BUNIT unit).
+        This keyword should be added in the case of data other than
+        GALEX (FUV, NUV), 2MASS (J, H, Ks), SPITZER (IRAC, MIPS),
+        HERSCHEL (PACS, SPIRE; photometry)
         INSTRUME: the name of the instrument used
         WAVELNTH: the representative wavelength (in micrometres) of the filter
-                  bandpass
+        bandpass
 
     Keywords which constitute a valid world coordinate system must also be
     present.
@@ -164,9 +164,6 @@ def print_usage():
     them. The calculated values will be present in the headers of the output
     images; if they are not the desired values, please check the headers
     of your input images and try again.
-
-
-
 
     """
 
@@ -279,8 +276,7 @@ def parse_command_line(args):
         0 : The arguments were succesfully parsed, and the varibales updated.
         1 : args contains --help
         2 : There was an error in parsing the arguments or the image/kernel
-            directories mentioned do not exist.
-
+        directories mentioned do not exist.
     """
 
     global ang_size

@@ -158,7 +158,9 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 
 
 # -- Adding some extensions ---------------------------------------------------
-extensions += ['sphinx.ext.autodoc', 'sphinx.ext.coverage']
+numpydoc_show_class_members = False
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.coverage']
+extensions += ['sphinx_automodapi.automodapi']
 
 # -- Options for the edit_on_github extension ---------------------------------
 
