@@ -32,7 +32,7 @@ import astropy.utils.console as console
 from astropy.utils.exceptions import AstropyUserWarning
 
 # import the file containing all the constants
-from imagecube_constants import (FUV_LAMBDA_CON,
+from imagecube.imagecube_constants import (FUV_LAMBDA_CON,
                                  FVEGA_H,
                                  FVEGA_J,
                                  FVEGA_KS,
@@ -502,6 +502,8 @@ def find_image_planes(hdulist):
             try:  # look for 'EXTNAME' keyword, see if it's 'SCI'
                 if 'SCI' in hdulist[extn].header['EXTNAME']:
                     img_plns.append(extn)
+                else:
+                    img_plns.append(extn) # not sure if this is right but need a case for when SCI not EXTNAME
             except KeyError:  # no 'EXTNAME', we assume we want this extension
                 img_plns.append(extn)
     return(img_plns)
@@ -525,12 +527,13 @@ def register_images(image_stack):
 
     # get WCS info for the reference image
     lngref_input, latref_input, rotation_pa = get_ref_wcs(main_reference_image)
-    width_and_height = u.arcsec.to(u.deg, ang_size)
+    width_and_height = (ang_size * u.arcsec).to(u.deg)/u.deg #converts to unitless so that montage can read it
 
     # temporary directory to store the file from image_stack
     # so that reproject function works
     tmp_directory = image_directory + "/temp/"
-    os.mkdir(tmp_directory)
+    if not os.path.exists(tmp_directory):
+        os.mkdir(tmp_directory)
 
     # now loop over all the images
     for i in range(1, len(image_stack)):
@@ -733,7 +736,8 @@ def resample_images(image_stack, logfile_name):
     # temporary directory to store the file from image_stack
     # so that reproject function works
     tmp_directory = image_directory + "/temp/"
-    os.mkdir(tmp_directory)
+    if not os.path.exists(tmp_directory):
+        os.mkdir(tmp_directory)
 
     for i in range(1, len(image_stack)):
         original_filename = os.path.basename(image_stack[i].header['FILENAME'])
@@ -1072,9 +1076,8 @@ def main(args=None):
             #             planes, after finishing file loop
             pixelscale = get_pixel_scale(header)
             fov = pixelscale * float(header['NAXIS1'])
-            log.info("Checking %s: is pixel scale (%.2f\") < ang_size " +
-                     "(%.2f\") + < FOV (%.2f\") ?" % (fitsfile, pixelscale,
-                                                      ang_size, fov))
+            log.info("Checking %s: is pixel scale (%.2f\")"
+                     " < ang_size (%.2f\") < FOV (%.2f\") ?" % (fitsfile, pixelscale, ang_size, fov))
             if (pixelscale < ang_size < fov):
                 try:
                     # there seems to be a different name for wavelength
@@ -1086,8 +1089,7 @@ def main(args=None):
                     a = fits.ImageHDU(header=header, data=image)
                     hdus.append(a)
                 except KeyError:
-                    warnings.warn('Image %s has no WAVELNTH keyword, will ' +
-                                  'not be used' % filename, AstropyUserWarning)
+                    warnings.warn('Image %s has no WAVELNTH keyword, will not be used' % filename, AstropyUserWarning)
             else:
                 warnings.warn("Image %s does not meet the above criteria." %
                               filename, AstropyUserWarning)
@@ -1229,16 +1231,6 @@ def main(args=None):
         else:
             return
 
-# if __name__ == '__main__':
-#     import sys
-#     main(sys.argv[1:])
-
-# this is just to test and see if the script is running fine,
-# delete for the realease
-# main()
+#main()
 
 
-# python imagecube.py --flux_conv --im_reg --im_conv --fwhm=8 --im_regrid
-# --im_pixsc=3.0 --ang_size=300 --im_ref
-# /home/rishabkhincha/fits_files/pb_test/n5128_pbcd_24.fits
-# --dir /home/rishabkhincha/fits_files/pb_test/
