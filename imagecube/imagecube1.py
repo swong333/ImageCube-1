@@ -33,16 +33,16 @@ from astropy.utils.exceptions import AstropyUserWarning
 
 # import the file containing all the constants
 from imagecube.imagecube_constants import (FUV_LAMBDA_CON,
-                                 FVEGA_H,
-                                 FVEGA_J,
-                                 FVEGA_KS,
-                                 JY_CONVERSION,
-                                 MJY_PER_SR_TO_JY_PER_ARCSEC2,
-                                 NUV_LAMBDA_CON,
-                                 NYQUIST_SAMPLING_RATE,
-                                 S250_BEAM_AREA,
-                                 S350_BEAM_AREA,
-                                 S500_BEAM_AREA,)
+                                           FVEGA_H,
+                                           FVEGA_J,
+                                           FVEGA_KS,
+                                           JY_CONVERSION,
+                                           MJY_PER_SR_TO_JY_PER_ARCSEC2,
+                                           NUV_LAMBDA_CON,
+                                           NYQUIST_SAMPLING_RATE,
+                                           S250_BEAM_AREA,
+                                           S350_BEAM_AREA,
+                                           S500_BEAM_AREA, )
 
 # also import WAVELENGTH_2MASS_H, WAVELENGTH_2MASS_J, WAVELENGTH_2MASS_KS
 
@@ -337,6 +337,7 @@ def convert_images(image_stack):
         A structure containing headers and image data for all FITS input
         images.
 
+
     """
     # make new directory for output, if needed
     new_directory = image_directory + "/converted/"
@@ -385,11 +386,16 @@ def convert_images(image_stack):
 def get_pixel_scale(header):
     '''
     Compute the pixel scale in arcseconds per pixel from an image WCS
-    Assumes WCS is in degrees (TODO: generalize)
+    Assumes WCS is in degrees
 
     Parameters
     ----------
     header: FITS header of image
+
+    Returns
+    -------
+    pix_scale: float
+        Pixel scale in arcseconds per pixel
 
 
     '''
@@ -407,12 +413,16 @@ def get_pixel_scale(header):
 def get_pangle(header):
     '''
     Compute the rotation angle, in degrees,  from an image WCS
-    Assumes WCS is in degrees (TODO: generalize)
+    Assumes WCS is in degrees
 
     Parameters
     ----------
     header: FITS header of image
 
+    Returns
+    -------
+    cr2: float
+        Rotation angle in degrees
 
     '''
     w = wcs.WCS(header)
@@ -500,10 +510,8 @@ def find_image_planes(hdulist):
     else:  # loop over all the extensions & try to find the right ones
         for extn in range(1, n_hdu):
             try:  # look for 'EXTNAME' keyword, see if it's 'SCI'
-                if 'SCI' in hdulist[extn].header['EXTNAME']:
+                if 'SCI' or 'WSAIMAGE' or 'BINTABLE' in hdulist[extn].header['EXTNAME']: #SAM ADDED WSANAME AND BINTABLE
                     img_plns.append(extn)
-                else:
-                    img_plns.append(extn) # not sure if this is right but need a case for when SCI not EXTNAME
             except KeyError:  # no 'EXTNAME', we assume we want this extension
                 img_plns.append(extn)
     return(img_plns)
@@ -528,6 +536,9 @@ def register_images(image_stack):
     # get WCS info for the reference image
     lngref_input, latref_input, rotation_pa = get_ref_wcs(main_reference_image)
     width_and_height = (ang_size * u.arcsec).to(u.deg)/u.deg #converts to unitless so that montage can read it
+    """print("---------SIZE------------")
+    print(lngref_input, latref_input)
+    print(width_and_height)"""
 
     # temporary directory to store the file from image_stack
     # so that reproject function works
@@ -555,10 +566,16 @@ def register_images(image_stack):
         hdulist.append(fits.PrimaryHDU(header=hdu_header, data=hdu_data))
         hdulist.writeto(tmp_filename, overwrite=True, output_verify='ignore')
 
+        """#(SAM) SET EQUINOX TO THE EQUINOX THAT IS DEFINED IN THE HEADER
+        if image_stack[i].header['EQUINOX']:
+            equinox = image_stack[i].header['EQUINOX']
+        else:
+            equinox = 2000"""
+
         # make the new header & merge it with old
         montage.commands.mHdr(str(lngref_input) + ' ' + str(latref_input),
                               width_and_height, artificial_filename,
-                              system='eq', equinox=2000.0,
+                              system='eq', equinox=2000,
                               height=width_and_height,
                               pix_size=native_pixelscale, rotation=rotation_pa)
         image_stack[i].header = merge_headers(artificial_filename,
@@ -968,20 +985,21 @@ def main(args=None):
     global im_pixsc  # change variable name
     global rot_angle
     global make_2D
-    ang_size = ''
-    image_directory = ''
-    main_reference_image = ''
-    fwhm_input = ''
+    ang_size = 160 #size of smallest image (arcsec)
+    image_directory = 'images'
+    main_reference_image = 'images/UKIRT_Kband_full.fits'
+    fwhm_input = 1.4
     do_conversion = False
-    do_registration = False
-    do_convolution = False
-    do_resampling = False
+    do_registration = True
+    do_convolution = True
+    do_resampling = True
     do_seds = False
     do_cleanup = False
     kernel_directory = ''
-    im_pixsc = ''
+    im_pixsc = 1.4 #largest pixel size
+    rot_angle = 0 #(SAM) ADDED USER INPUT ROT ANGLE
 
-    make_2D = False
+    make_2D = True
 
     # note start time for log
     start_time = datetime.now()
@@ -1231,6 +1249,6 @@ def main(args=None):
         else:
             return
 
-#main()
+main()
 
 
